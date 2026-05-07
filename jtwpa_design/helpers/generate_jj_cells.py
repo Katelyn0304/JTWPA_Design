@@ -4,7 +4,12 @@ from pathlib import Path
 
 import gdsfactory as gf
 
-from jtwpa_design.cells.components.JJ import JJ1, JJ2, create_jj_cross_princeton
+from jtwpa_design.cells.components.JJ import (
+    JJ1,
+    JJ2,
+    create_jj_cross_princeton,
+    create_jj_cross_princeton_adaption,
+)
 from jtwpa_design.cells.components.text_id import text_id
 from jtwpa_design.pdk import PDK
 
@@ -20,6 +25,7 @@ JJ_CELLS: dict[str, CellFactory] = {
         merge_jj_and_patches=False,
         pad_style="rectangle",
     ),
+    "princeton_adaption": lambda: create_jj_cross_princeton_adaption(theta_deg=45),
 }
 
 
