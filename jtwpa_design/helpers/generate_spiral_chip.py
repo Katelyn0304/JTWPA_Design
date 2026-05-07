@@ -1,5 +1,10 @@
 import argparse
 from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from jtwpa_design.cells.chips.spiral import spiral_chip
 from jtwpa_design.parameters.chips.spiral import SpiralChipParams
@@ -12,7 +17,7 @@ def main() -> None:
     parser.add_argument("--wafer-id", default="W01", help="Wafer ID label to place on the chip.")
     parser.add_argument(
         "--junction-style",
-        choices=["legacy", "princeton"],
+        choices=["legacy", "princeton", "princeton_adaption"],
         default="princeton",
         help="Junction style to use in the spiral chip.",
     )

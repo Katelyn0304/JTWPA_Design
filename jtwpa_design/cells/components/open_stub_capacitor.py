@@ -49,12 +49,17 @@ def open_stub_capacitor(
 
     c.add_polygon(
         [
-            (-width / 2 - contact_overlap_x, -contact_pad_height / 2),
-            (width / 2 + contact_overlap_x, -contact_pad_height / 2),
-            (width / 2 + contact_overlap_x, contact_pad_height / 2),
-            (-width / 2 - contact_overlap_x, contact_pad_height / 2),
+            # (-width / 2 - contact_overlap_x, -contact_pad_height / 2),
+            # (width / 2 + contact_overlap_x, -contact_pad_height / 2),
+            # (width / 2 + contact_overlap_x, contact_pad_height / 2),
+            # (-width / 2 - contact_overlap_x, contact_pad_height / 2),
+            (-width / 2 - 0, -contact_pad_height / 2),
+            (width / 2 + 0, -contact_pad_height / 2),
+            (width / 2 + 0, contact_pad_height / 2),
+            (-width / 2 - 0, contact_pad_height / 2),
         ],
-        layer=LAYER.AIR_BRIDGE_CONTACT,
+        # layer=LAYER.AIR_BRIDGE_CONTACT,
+        layer=LAYER.MAIN_METAL,
     )
 
     c.add_polygon(

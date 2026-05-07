@@ -1,4 +1,5 @@
 from typing import Literal
+from pathlib import Path
 
 import gdsfactory as gf
 import numpy as np
@@ -6,7 +7,12 @@ from gdsfactory.cross_section import ComponentAlongPath
 
 from jtwpa_design.builders.components.open_stub_capacitor import make_open_stub_capacitor
 from jtwpa_design.builders.components.twpa_launcher import make_twpa_launcher
-from jtwpa_design.cells.components.JJ import JJ1, JJ2, create_jj_cross_princeton
+from jtwpa_design.cells.components.JJ import (
+    JJ1,
+    JJ2,
+    create_jj_cross_princeton,
+    create_jj_cross_princeton_adaption,
+)
 from jtwpa_design.cells.components.marker import four_marker
 from jtwpa_design.cells.components.rectangle import rectangle
 from jtwpa_design.cells.components.text_id import text_id
@@ -19,10 +25,17 @@ from jtwpa_design.parameters.components.open_stub_capacitor import OpenStubCapac
 from jtwpa_design.parameters.rules import LayoutRules
 from jtwpa_design.tech import LAYER
 
-JunctionStyle = Literal["legacy", "princeton"]
+JunctionStyle = Literal["legacy", "princeton", "princeton_adaption"]
 
 
-def _junction(junction_style: JunctionStyle, legacy_factory, **legacy_kwargs) -> gf.Component:
+def _junction(
+    junction_style: JunctionStyle,
+    theta_deg: float,
+    legacy_factory,
+    **legacy_kwargs,
+) -> gf.Component:
+    if junction_style == "princeton_adaption":
+        return create_jj_cross_princeton_adaption(theta_deg=theta_deg)
     if junction_style == "princeton":
         return create_jj_cross_princeton()
     if junction_style == "legacy":
@@ -31,6 +44,8 @@ def _junction(junction_style: JunctionStyle, legacy_factory, **legacy_kwargs) ->
 
 
 def _junction_rotation(junction_style: JunctionStyle) -> float:
+    if junction_style == "princeton_adaption":
+        return -15+45
     if junction_style == "princeton":
         return -15
     if junction_style == "legacy":
@@ -38,7 +53,12 @@ def _junction_rotation(junction_style: JunctionStyle) -> float:
     raise ValueError(f"Unsupported junction_style: {junction_style}")
 
 
-@gf.cell()
+def _orient_junction_ref(ref, junction_style: JunctionStyle, theta_deg: float) -> None:
+    ref.rotate(_junction_rotation(junction_style))
+    _ = theta_deg
+
+
+@gf.cell(check_instances=False)
 def capacitors_JJs(
     rules: LayoutRules = LayoutRules(),
     base_capacitor: OpenStubCapacitorParams = OpenStubCapacitorParams(),
@@ -98,113 +118,112 @@ def capacitors_JJs(
     for cx, cy in JJ_arch_spiral:
         theta_deg = np.degrees(np.arctan2(cy, cx))
         if -1757 < cx < -1755 and -1545 < cy < -1543:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=8, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=8, extend_R=True)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 1747 < cx < 1749 and 1554 < cy < 1556:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=10)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 75 <= abs(theta_deg) <= 105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 60 <= theta_deg < 75 or -120 <= theta_deg < -105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 30 <= theta_deg < 60 or -150 <= theta_deg < -120:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=10, extend_R=True)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 105 < theta_deg <= 120 or -75 < theta_deg <= -60:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=10)
             JJ_ref.move((-1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif abs(theta_deg) <= 15 or abs(theta_deg) >= 165:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 150 <= theta_deg < 165 or -30 <= theta_deg < -15:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 120 < theta_deg < 150 or -60 < theta_deg < -30:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=10, extend_R=True)
             JJ_ref.move((1, -1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 15 < theta_deg <= 30 or -165 < theta_deg <= -150:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_R=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_R=10)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         else:
             continue
         JJ_ref.move((cx, cy))
     for cx, cy in JJ_arc1:
         theta_deg = np.degrees(np.arctan2(cy - 500, cx))
         if 75 <= abs(theta_deg) <= 105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 60 <= theta_deg < 75 or -120 <= theta_deg < -105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 30 <= theta_deg < 60 or -150 <= theta_deg < -120:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=10, extend_R=True)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 105 < theta_deg <= 120 or -75 < theta_deg <= -60:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=10)
             JJ_ref.move((-1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif abs(theta_deg) <= 15 or abs(theta_deg) >= 165:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 150 <= theta_deg < 165 or -30 <= theta_deg < -15:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 120 < theta_deg < 150 or -60 < theta_deg < -30:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=10, extend_R=True)
             JJ_ref.move((1, -1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 15 < theta_deg <= 30 or -165 < theta_deg <= -150:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_R=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_R=10)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         else:
             continue
         JJ_ref.move((cx, cy))
     for cx, cy in JJ_arc2:
         theta_deg = np.degrees(np.arctan2(cy + 500, cx))
         if 75 <= abs(theta_deg) <= 105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 60 <= theta_deg < 75 or -120 <= theta_deg < -105:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 30 <= theta_deg < 60 or -150 <= theta_deg < -120:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_R=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_R=10, extend_R=True)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 105 < theta_deg <= 120 or -75 < theta_deg <= -60:
-            JJ_ref = c << _junction(junction_style, JJ1, feet_width_L=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ1, feet_width_L=10)
             JJ_ref.move((-1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif abs(theta_deg) <= 15 or abs(theta_deg) >= 165:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8, feet_width_R=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8, feet_width_R=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 150 <= theta_deg < 165 or -30 <= theta_deg < -15:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=8)
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=8)
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 120 < theta_deg < 150 or -60 < theta_deg < -30:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_L=10, extend_R=True)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_L=10, extend_R=True)
             JJ_ref.move((1, -1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         elif 15 < theta_deg <= 30 or -165 < theta_deg <= -150:
-            JJ_ref = c << _junction(junction_style, JJ2, feet_width_R=10)
+            JJ_ref = c << _junction(junction_style, theta_deg, JJ2, feet_width_R=10)
             JJ_ref.move((1, 1))
-            JJ_ref.rotate(_junction_rotation(junction_style))
+            _orient_junction_ref(JJ_ref, junction_style, theta_deg)
         else:
             continue
         JJ_ref.move((cx, cy))
 
     c.add_port("center", center=(0, 0), orientation=0, width=1, layer=LAYER.GROUND_MASK)
-    c.flatten()
 
     return c
 
@@ -266,6 +285,9 @@ def twpa_cpw(rules: LayoutRules = LayoutRules()) -> gf.Component:
     )
     x = gf.CrossSection(sections=(s0, s1), components_along_path=(via,))
     c = gf.path.extrude(p, cross_section=x)
+    for index, inst in enumerate(c.insts, start=1):
+        if inst.cell.name.startswith("Unnamed"):
+            inst.cell.name = f"twpa_cpw_bridge_placements_{index}"
     return c
 
 
@@ -277,13 +299,15 @@ def spiral_bridges(rules: LayoutRules = LayoutRules()):
     s = gf.Section(width=rules.bridge.width, offset=0, layer=LAYER.AIR_BRIDGE)
     x = gf.CrossSection(sections=(s,))
     bridge1 = gf.path.extrude(path1, cross_section=x)
+    bridge1.name = "spiral_bridge_path_1"
     bridge1.add_port("center", center=(0, 0), orientation=90, width=1, layer=LAYER.GROUND_MASK)
     bridge2 = gf.path.extrude(path2, cross_section=x)
+    bridge2.name = "spiral_bridge_path_2"
     bridge2.add_port("center", center=(0, 0), orientation=90, width=1, layer=LAYER.GROUND_MASK)
     return bridge1, bridge2
 
 
-@gf.cell()
+@gf.cell(check_instances=False)
 def jtwpa_line(
     params: JTWPALineParams = JTWPALineParams(),
     rules: LayoutRules = LayoutRules(),
@@ -313,24 +337,23 @@ def jtwpa_line(
     pier_center_2 = c << gf.components.circle(radius=pier_radius, layer=LAYER.AIR_BRIDGE_CONTACT)
     pier_center_2.move((-13.63, 26.86))
     spiral_bridge_1, spiral_bridge_2 = spiral_bridges(rules=rules)
-    c << spiral_bridge_1
-    c << spiral_bridge_2
-    bridge_region = c.get_region(layer=LAYER.AIR_BRIDGE, merge=True)
-    c.remove_layers(layers=[LAYER.AIR_BRIDGE])
+    bridge_region_source = gf.Component(name="spiral_bridge_region_source")
+    bridge_region_source << spiral_bridge_1
+    bridge_region_source << spiral_bridge_2
+    bridge_region = bridge_region_source.get_region(layer=LAYER.AIR_BRIDGE, merge=True)
     c.add_polygon(bridge_region, layer=LAYER.AIR_BRIDGE)
     c.add_port("center", center=(c.x, c.y), orientation=30, width=1, layer=LAYER.GROUND_MASK)
-    c.flatten()
     return c
 
 
 def _unprocessed_ground(size: float = 5900):
-    c = gf.Component()
+    c = gf.Component(name=f"unprocessed_ground_S{size:g}")
     c << rectangle(width=size, height=size, layer=LAYER.GROUND_MASK)
     c.add_port("center", center=(0, 0), orientation=180, width=1, layer=LAYER.GROUND_MASK)
     return c
 
 
-@gf.cell()
+@gf.cell(check_instances=False)
 def spiral_chip(
     params: SpiralChipParams = SpiralChipParams(),
     rules: LayoutRules = LayoutRules(),
@@ -363,8 +386,9 @@ def spiral_chip(
     marker_2 = c << four_marker(size=marker_size, width=marker_width, boundary=marker_boundary)
     marker_2.move((marker_coordinate, marker_coordinate))
     unprocessed_ground = _unprocessed_ground(size=params.frame.size - params.dicing.width)
-    if params.include_dicing:
-        c << gf.import_gds("jtwpa_design/cells/chips/gds_components/six_mm_chip_dicing.gds")
+    dicing_path = Path("jtwpa_design/cells/chips/gds_components/six_mm_chip_dicing.gds")
+    if params.include_dicing and dicing_path.exists():
+        c << gf.import_gds(dicing_path)
     jtwpa_line_ref.connect("center", unprocessed_ground.ports["center"])
     ground = gf.boolean(
         A=unprocessed_ground,
@@ -374,6 +398,6 @@ def spiral_chip(
         layer2=LAYER.GROUND_MASK,
         layer=LAYER.MAIN_METAL,
     )
+    ground.name = "spiral_chip_ground"
     c.add_ref(ground)
-    c.flatten()
     return c

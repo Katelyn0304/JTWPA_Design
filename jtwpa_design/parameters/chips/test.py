@@ -2,9 +2,15 @@ from pydantic import Field
 
 from jtwpa_design.parameters._base import ParameterModel
 from jtwpa_design.parameters.features.chip_frame import ChipFrameParams
-from jtwpa_design.parameters.features.dicing import DicingParams
 from jtwpa_design.parameters.features.label import ChipLabelStyleParams
 from jtwpa_design.parameters.features.marker import MarkerStyleParams
+
+try:
+    from jtwpa_design.parameters.features.dicing import DicingParams
+except ModuleNotFoundError:
+
+    class DicingParams(ParameterModel):
+        width: float = 0.0
 
 
 class TestChipParams(ParameterModel):
