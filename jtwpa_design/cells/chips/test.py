@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import gdsfactory as gf
 
 from jtwpa_design.cells.components.marker import marker
@@ -14,12 +16,13 @@ def _unprocessed_ground(size: float = 5900):
     return c
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def test_chip(params: TestChipParams = TestChipParams()) -> gf.Component:
     c = gf.Component()
 
-    gds_path = "jtwpa_design/cells/chips/gds_components/test_chip_without_ground.gds"
-    c << gf.import_gds(gds_path)
+    gds_path = Path("jtwpa_design/cells/chips/gds_components/test_chip_without_ground.gds")
+    if gds_path.exists():
+        c << gf.import_gds(gds_path)
     c << text_id(
         id=params.test_id, text_size=params.label.text_size, margin=params.label.text_margin
     )
@@ -47,8 +50,8 @@ def test_chip(params: TestChipParams = TestChipParams()) -> gf.Component:
         layer=LAYER.MAIN_METAL,
     )
     c.add_ref(ground)
-    if params.include_dicing:
-        c << gf.import_gds("jtwpa_design/cells/chips/gds_components/six_mm_chip_dicing.gds")
-    c.flatten()
+    dicing_path = Path("jtwpa_design/cells/chips/gds_components/six_mm_chip_dicing.gds")
+    if params.include_dicing and dicing_path.exists():
+        c << gf.import_gds(dicing_path)
 
     return c

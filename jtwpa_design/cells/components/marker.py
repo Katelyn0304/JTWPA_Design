@@ -5,7 +5,7 @@ from jtwpa_design.tech import LAYER
 from .rectangle import rectangle
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def marker(
     size: float = 100.0,
     width: float = 4.0,
@@ -15,11 +15,10 @@ def marker(
     c << rectangle(width=size, height=width, layer=LAYER.MAIN_METAL)
     c << rectangle(width=width, height=size, layer=LAYER.MAIN_METAL)
     c << rectangle(width=size + boundary * 2, height=size + boundary * 2, layer=LAYER.GROUND_MASK)
-    c.flatten()
     return c
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def four_marker(
     size: float = 100.0,
     width: float = 4.0,
@@ -34,5 +33,4 @@ def four_marker(
     m2.move((size / 2 + boundary / 2, -size / 2 - boundary / 2))
     m3.move((size / 2 + boundary / 2, size / 2 + boundary / 2))
     m4.move((-size / 2 - boundary / 2, size / 2 + boundary / 2))
-    c.flatten()
     return c

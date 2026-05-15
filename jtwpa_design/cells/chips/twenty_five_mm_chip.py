@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import gdsfactory as gf
 
 from jtwpa_design.cells.chips.spiral import spiral_chip
@@ -16,7 +18,7 @@ def _unprocessed_ground(size: float = 24900):
     return c
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def _corner_markers(
     size: float = 400, width: float = 20, boundary: float = 200, coordinate: float = 11200
 ) -> gf.Component:
@@ -32,7 +34,7 @@ def _corner_markers(
     return c
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def twenty_five_mm_chip(
     spiral_id_list: list[str],
     test_id_list: list[str],
@@ -73,9 +75,13 @@ def twenty_five_mm_chip(
         )
         spiral_chip_ref.move(spiral_chip_points[i])
 
-    temp << gf.import_gds("jtwpa_design/cells/chips/gds_components/twenty_five_mm_chip_dicing.gds")
+    dicing_path = Path("jtwpa_design/cells/chips/gds_components/twenty_five_mm_chip_dicing.gds")
+    if dicing_path.exists():
+        temp << gf.import_gds(dicing_path)
 
-    temp << gf.import_gds("jtwpa_design/cells/chips/gds_components/A25mark_250919.gds")
+    mark_path = Path("jtwpa_design/cells/chips/gds_components/A25mark_250919.gds")
+    if mark_path.exists():
+        temp << gf.import_gds(mark_path)
 
     temp << _corner_markers(
         size=params.marker_size,
@@ -98,6 +104,5 @@ def twenty_five_mm_chip(
     )
     c.add_ref(_)
     c << temp
-    c.flatten()
 
     return c

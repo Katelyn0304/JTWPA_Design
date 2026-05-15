@@ -33,7 +33,7 @@ def generate_test_chips_id(number: int = 14) -> list[list[str]]:
     return split_list
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def four_inches_wafer(
     params: WaferParams = WaferParams(), rules: LayoutRules = LayoutRules()
 ) -> gf.Component:
@@ -78,6 +78,5 @@ def four_inches_wafer(
         layer=LAYER.MAIN_METAL,
     )
     c.add_ref(ground)
-    c.flatten()
 
     return c
